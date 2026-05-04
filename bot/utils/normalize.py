@@ -6,4 +6,8 @@ def normalize_text(value: str) -> str:
 
 
 def normalize_engine(value: str) -> str:
-    return re.sub(r'\D', '', str(value or ''))
+    raw = str(value or '').strip()
+    digits = re.sub(r'\D', '', raw)
+    if digits:
+        return digits
+    return normalize_text(raw)

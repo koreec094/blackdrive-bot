@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from bot.config import settings
 from bot.services.google_sheets import GoogleSheetsClient
 
 
@@ -12,7 +13,13 @@ class HistoryService:
             self.sheets.now_str(), str(telegram_id), username or '', brand, model, year, engine, price_usd, total, currency,
         ])
 
-    def save_request(self, telegram_id: int, username: str, full_name: str, brand: str, model: str, year: str, engine: str, comment: str) -> None:
+    def save_request(self, telegram_id: int, username: str, full_name: str, brand: str, model: str, year: str, engine: str, phone: str, comment: str) -> None:
         self.sheets.append_request([
-            self.sheets.now_str(), str(telegram_id), username or '', full_name or '', brand, model, year, engine, comment, 'new',
+            self.sheets.now_str(), str(telegram_id), username or '', full_name or '', brand, model, year, engine, phone, comment, 'new',
         ])
+
+    def history_count(self) -> int:
+        return self.sheets.count_rows(settings.history_sheet_name)
+
+    def requests_count(self) -> int:
+        return self.sheets.count_rows(settings.requests_sheet_name)
