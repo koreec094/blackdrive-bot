@@ -31,6 +31,14 @@ def find_value(snapshot: list[list[str]], *keywords: str) -> str:
     return '—'
 
 
+def read_cell_or_warn(field_name: str, cell_address: str) -> str:
+    value = router.calculator.sheets.read_calc_cell(cell_address).strip()
+    if value:
+        return value
+    logger.warning('Empty value for %s at cell %s', field_name, cell_address)
+    return '—'
+
+
 def register_dependencies(catalog, calculator, history, bot):
     router.catalog = catalog
     router.calculator = calculator
@@ -211,29 +219,19 @@ async def enter_real_price(message: Message, state: FSMContext):
 
     data = await state.get_data()
     snapshot = router.calculator.calculate(data['brand'], data['model'], data['year'], data['engine'], data['invoice_usd'], real_price_krw)
-    total_line = next((row for row in snapshot if row and 'итог' in row[0].strip().lower()), None)
-    total = total_line[1] if total_line and len(total_line) > 1 else '—'
-    currency = total_line[2] if total_line and len(total_line) > 2 else '₸/$'
+    car_to_almaty_krw = read_cell_or_warn('car_to_almaty_krw', settings.car_to_almaty_krw_cell)
+    car_to_almaty_usd = read_cell_or_warn('car_to_almaty_usd', settings.car_to_almaty_usd_cell)
+    customs_total = read_cell_or_warn('customs_total', settings.customs_total_cell)
+    recycle = read_cell_or_warn('utilization_fee', settings.utilization_fee_cell)
+    reg = read_cell_or_warn('primary_registration', settings.primary_registration_cell)
+    total = read_cell_or_warn('final_total', settings.final_total_cell)
 
-    car_to_almaty_krw = find_value(snapshot, 'стоимость автомобиля до алматы', 'авто до алматы')
-    car_to_almaty_usd = find_value(snapshot, 'стоимость автомобиля до алматы usd', 'авто до алматы usd')
-    if settings.car_to_almaty_total_cell:
-        cell_value = router.calculator.sheets.read_calc_cell(settings.car_to_almaty_total_cell)
-        if cell_value:
-            car_to_almaty_krw = cell_value
-        else:
-            logger.warning('Cell %s for car to Almaty total is empty', settings.car_to_almaty_total_cell)
-            if car_to_almaty_krw in {'', '—'}:
-                car_to_almaty_krw = 'не рассчитано'
-
-    fees = find_value(snapshot, 'сборы')
+    fees = customs_total
     duty = find_value(snapshot, 'пошлина')
     vat = find_value(snapshot, 'ндс')
-    recycle = find_value(snapshot, 'утильсбор')
-    reg = find_value(snapshot, 'первичная регистрация')
     sbkts = find_value(snapshot, 'сбктс', 'эптс', 'кнопка')
 
-    router.history.save_success(message.from_user.id, message.from_user.username or '', data['brand'], data['model'], data['year'], data['engine'], data['invoice_usd'], total, currency)
+    router.history.save_success(message.from_user.id, message.from_user.username or '', data['brand'], data['model'], data['year'], data['engine'], data['invoice_usd'], total, '₸')
     await message.answer(
         f'🚗 Расчет авто до Алматы\n\n'
         f'Марка: {data["brand"]}\n'
@@ -251,7 +249,7 @@ async def enter_real_price(message: Message, state: FSMContext):
         f'Утильсбор: {recycle}\n'
         f'Первичная регистрация: {reg}\n'
         f'СБКТС/ЭПТС/Кнопка: {sbkts}\n\n'
-        f'Итоговая стоимость авто в Алматы с таможней:\n{total} {currency}\n\n'
+        f'Итоговая стоимость авто в Алматы с таможней:\n{total}\n\n'
         f'Связаться с нами:\nTelegram: {settings.manager_telegram}\nWhatsApp: {settings.manager_whatsapp}'
     )
     await state.clear()

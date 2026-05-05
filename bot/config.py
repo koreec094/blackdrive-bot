@@ -29,9 +29,12 @@ class Settings(BaseSettings):
     calc_input_invoice_cell: str = Field(default='B8', alias='CALC_INPUT_INVOICE_CELL')
     calc_input_real_price_cell: str = Field(default='B11', alias='CALC_INPUT_REAL_PRICE_CELL')
 
-    car_to_almaty_total_cell: str = Field(default='', alias='CAR_TO_ALMATY_TOTAL_CELL')
-    customs_total_cell: str = Field(default='', alias='CUSTOMS_TOTAL_CELL')
-    final_total_cell: str = Field(default='', alias='FINAL_TOTAL_CELL')
+    car_to_almaty_krw_cell: str = Field(default='B11', alias='CAR_TO_ALMATY_KRW_CELL')
+    car_to_almaty_usd_cell: str = Field(default='D11', alias='CAR_TO_ALMATY_USD_CELL')
+    customs_total_cell: str = Field(default='B18', alias='CUSTOMS_TOTAL_CELL')
+    utilization_fee_cell: str = Field(default='B19', alias='UTILIZATION_FEE_CELL')
+    primary_registration_cell: str = Field(default='B20', alias='PRIMARY_REGISTRATION_CELL')
+    final_total_cell: str = Field(default='B24', alias='FINAL_TOTAL_CELL')
 
     calc_output_range: str = Field(default='A1:Z60', alias='CALC_OUTPUT_RANGE')
     cache_ttl_minutes: int = Field(default=20, alias='CACHE_TTL_MINUTES')
