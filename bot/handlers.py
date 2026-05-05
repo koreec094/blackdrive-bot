@@ -8,7 +8,7 @@ from aiogram.fsm.context import FSMContext
 from aiogram.types import CallbackQuery, KeyboardButton, Message, ReplyKeyboardMarkup
 
 from bot.config import settings
-from bot.keyboards import options_keyboard, start_menu_keyboard, subscribe_keyboard
+from bot.keyboards import final_result_keyboard, options_keyboard, start_menu_keyboard, subscribe_keyboard
 from bot.states import CalcStates
 
 
@@ -37,6 +37,38 @@ def read_cell_or_warn(field_name: str, cell_address: str) -> str:
         return value
     logger.warning('Empty value for %s at cell %s', field_name, cell_address)
     return '—'
+
+
+def parse_int(value: str) -> int | None:
+    digits = digits_only(value)
+    return int(digits) if digits else None
+
+
+def format_number(value: int | str | None) -> str:
+    if value is None:
+        return '—'
+    if isinstance(value, str):
+        parsed = parse_int(value)
+        if parsed is None:
+            return '—'
+        value = parsed
+    return f'{value:,}'.replace(',', ' ')
+
+
+def format_currency(value: int | str | None, symbol: str) -> str:
+    formatted = format_number(value)
+    return f'{formatted} {symbol}' if formatted != '—' else '—'
+
+
+def find_value_by_label(snapshot: list[list[str]], label: str, value_col_idx: int = 1) -> str:
+    expected = label.strip().casefold()
+    for row in snapshot:
+        if not row:
+            continue
+        row_label = (row[0] if len(row) > 0 else '').strip().casefold()
+        if row_label == expected:
+            return (row[value_col_idx] if len(row) > value_col_idx else '').strip()
+    return ''
 
 
 def register_dependencies(catalog, calculator, history, bot):
@@ -219,10 +251,20 @@ async def enter_real_price(message: Message, state: FSMContext):
 
     data = await state.get_data()
     snapshot = router.calculator.calculate(data['brand'], data['model'], data['year'], data['engine'], data['invoice_usd'], real_price_krw)
-    car_to_almaty_krw = read_cell_or_warn('car_to_almaty_krw', settings.car_to_almaty_krw_cell)
-    car_to_almaty_usd = read_cell_or_warn('car_to_almaty_usd', settings.car_to_almaty_usd_cell)
+    real_price_value = int(real_price_krw)
+    krw_usd_rate = parse_int(read_cell_or_warn('krw_usd_rate', settings.krw_usd_rate_cell))
+
+    car_to_almaty_krw = parse_int(read_cell_or_warn('car_to_almaty_krw', settings.car_to_almaty_krw_cell))
+    car_to_almaty_usd = parse_int(read_cell_or_warn('car_to_almaty_usd', settings.car_to_almaty_usd_cell))
+
+    if krw_usd_rate and (car_to_almaty_krw is None or car_to_almaty_usd is None):
+        car_to_almaty_krw = real_price_value + settings.dealer_fee_krw + settings.logistics_usd * krw_usd_rate
+        car_to_almaty_usd = round(car_to_almaty_krw / krw_usd_rate)
+
     customs_total = read_cell_or_warn('customs_total', settings.customs_total_cell)
     recycle = read_cell_or_warn('utilization_fee', settings.utilization_fee_cell)
+    if recycle == '—':
+        recycle = find_value_by_label(snapshot, 'Утильсбор') or '—'
     reg = read_cell_or_warn('primary_registration', settings.primary_registration_cell)
     total = read_cell_or_warn('final_total', settings.final_total_cell)
 
@@ -238,11 +280,11 @@ async def enter_real_price(message: Message, state: FSMContext):
         f'Модель: {data["model"]}\n'
         f'Год выпуска: {data["year"]}\n'
         f'Объем двигателя: {data["engine"]}\n\n'
-        f'Реальная стоимость авто в Корее: {real_price_krw} ₩\n'
-        f'Комиссия дилера: 440 000 ₩\n'
-        f'Логистика Инчон — Алматы: 1 750 $\n'
-        f'Стоимость автомобиля до Алматы: {car_to_almaty_krw} ₩ / {car_to_almaty_usd} $\n'
-        f'Оценочная стоимость / инвойс для таможни: {data["invoice_usd"]} $\n\n'
+        f'Реальная стоимость авто в Корее: {format_currency(real_price_value, "₩")}\n'
+        f'Комиссия дилера: {format_currency(settings.dealer_fee_krw, "₩")}\n'
+        f'Логистика Инчон — Алматы: {format_currency(settings.logistics_usd, "$")}\n'
+        f'Стоимость автомобиля до Алматы: {format_currency(car_to_almaty_krw, "₩")} / {format_currency(car_to_almaty_usd, "$")}\n'
+        f'Оценочная стоимость / инвойс для таможни: {format_currency(data["invoice_usd"], "$")}\n\n'
         f'Сборы: {fees}\n'
         f'Пошлина: {duty}\n'
         f'НДС: {vat}\n'
@@ -250,9 +292,26 @@ async def enter_real_price(message: Message, state: FSMContext):
         f'Первичная регистрация: {reg}\n'
         f'СБКТС/ЭПТС/Кнопка: {sbkts}\n\n'
         f'Итоговая стоимость авто в Алматы с таможней:\n{total}\n\n'
-        f'Связаться с нами:\nTelegram: {settings.manager_telegram}\nWhatsApp: {settings.manager_whatsapp}'
+        f'Связаться с нами:\nTelegram: {settings.manager_telegram}\nWhatsApp: {settings.manager_whatsapp}',
+        reply_markup=final_result_keyboard(),
     )
     await state.clear()
+
+
+@router.callback_query(F.data == 'final|manager')
+async def final_manager_contacts(callback: CallbackQuery):
+    await callback.answer()
+    await callback.message.answer(
+        f'Связаться с менеджером:\nTelegram: {settings.manager_telegram}\nWhatsApp: {settings.manager_whatsapp}'
+    )
+
+
+@router.callback_query(F.data == 'final|recalculate')
+async def final_recalculate(callback: CallbackQuery, state: FSMContext):
+    await callback.answer()
+    await state.clear()
+    await state.set_state(CalcStates.choosing_brand)
+    await callback.message.answer('Выберите марку:', reply_markup=options_keyboard(router.catalog.brands(), 'brand'))
 
 # other handlers unchanged...
 @router.message(CalcStates.manual_name)
