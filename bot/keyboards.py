@@ -1,12 +1,24 @@
 from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 
 
-def options_keyboard(options: list[str], prefix: str, row_width: int = 2, with_back: bool = False, back_callback: str = 'nav|back') -> InlineKeyboardMarkup:
+MANAGER_CONTACT_BUTTON_TEXT = 'Не нашли нужный автомобиль? Напишите нам для расчета'
+
+
+def options_keyboard(
+    options: list[str],
+    prefix: str,
+    row_width: int = 2,
+    with_back: bool = False,
+    back_callback: str = 'nav|back',
+    manager_url: str | None = None,
+) -> InlineKeyboardMarkup:
     rows = []
     for i in range(0, len(options), row_width):
         rows.append([InlineKeyboardButton(text=o, callback_data=f'{prefix}|{o}') for o in options[i:i + row_width]])
     if with_back:
         rows.append([InlineKeyboardButton(text='⬅️ Назад', callback_data=back_callback)])
+    if manager_url:
+        rows.append([InlineKeyboardButton(text=MANAGER_CONTACT_BUTTON_TEXT, url=manager_url)])
     return InlineKeyboardMarkup(inline_keyboard=rows)
 
 

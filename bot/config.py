@@ -14,6 +14,7 @@ class Settings(BaseSettings):
 
     main_channel_id: str = Field(default='', alias='MAIN_CHANNEL_ID')
     main_channel_url: str = Field(default='https://t.me/blackdriveauto', alias='MAIN_CHANNEL_URL')
+    manager_telegram_url: str = Field(default='https://t.me/blackdriveauto1', alias='MANAGER_TELEGRAM_URL')
     manager_telegram: str = Field(default='@blackdriveauto1', alias='MANAGER_TELEGRAM')
     manager_whatsapp: str = Field(default='wa.me/77085217861', alias='MANAGER_WHATSAPP')
 

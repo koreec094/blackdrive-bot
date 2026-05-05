@@ -123,7 +123,7 @@ async def start_calculation(callback: CallbackQuery, state: FSMContext):
         )
         return
     await state.set_state(CalcStates.choosing_brand)
-    await callback.message.edit_text('Выберите марку:', reply_markup=options_keyboard(router.catalog.brands(), 'brand'))
+    await callback.message.edit_text('Выберите марку:', reply_markup=options_keyboard(router.catalog.brands(), 'brand', manager_url=settings.manager_telegram_url))
 
 
 @router.callback_query(CalcStates.choosing_country, F.data == 'menu|check_subscription')
@@ -145,7 +145,7 @@ async def choose_brand(callback: CallbackQuery, state: FSMContext):
     await state.set_state(CalcStates.choosing_model)
     await callback.message.edit_text(
         'Выберите модель:',
-        reply_markup=options_keyboard(router.catalog.models(brand), 'model', with_back=True, back_callback='nav|to_brand'),
+        reply_markup=options_keyboard(router.catalog.models(brand), 'model', with_back=True, back_callback='nav|to_brand', manager_url=settings.manager_telegram_url),
     )
 
 
@@ -154,7 +154,7 @@ async def back_to_brand(callback: CallbackQuery, state: FSMContext):
     await callback.answer()
     await state.update_data(model=None, year=None, engine=None, car_price_krw=None)
     await state.set_state(CalcStates.choosing_brand)
-    await callback.message.edit_text('Выберите марку:', reply_markup=options_keyboard(router.catalog.brands(), 'brand'))
+    await callback.message.edit_text('Выберите марку:', reply_markup=options_keyboard(router.catalog.brands(), 'brand', manager_url=settings.manager_telegram_url))
 
 
 @router.callback_query(CalcStates.choosing_model, F.data.startswith('model|'))
@@ -166,7 +166,7 @@ async def choose_model(callback: CallbackQuery, state: FSMContext):
     await state.set_state(CalcStates.choosing_year)
     await callback.message.edit_text(
         'Выберите год:',
-        reply_markup=options_keyboard(router.catalog.years(data['brand'], model), 'year', with_back=True, back_callback='nav|to_model'),
+        reply_markup=options_keyboard(router.catalog.years(data['brand'], model), 'year', with_back=True, back_callback='nav|to_model', manager_url=settings.manager_telegram_url),
     )
 
 
@@ -178,7 +178,7 @@ async def back_to_model(callback: CallbackQuery, state: FSMContext):
     await state.set_state(CalcStates.choosing_model)
     await callback.message.edit_text(
         'Выберите модель:',
-        reply_markup=options_keyboard(router.catalog.models(data['brand']), 'model', with_back=True, back_callback='nav|to_brand'),
+        reply_markup=options_keyboard(router.catalog.models(data['brand']), 'model', with_back=True, back_callback='nav|to_brand', manager_url=settings.manager_telegram_url),
     )
 
 
@@ -192,7 +192,7 @@ async def choose_year(callback: CallbackQuery, state: FSMContext):
     await callback.message.edit_text(
         'Выберите объем двигателя:',
         reply_markup=options_keyboard(
-            router.catalog.engines(data['brand'], data['model'], year), 'engine', with_back=True, back_callback='nav|to_year'
+            router.catalog.engines(data['brand'], data['model'], year), 'engine', with_back=True, back_callback='nav|to_year', manager_url=settings.manager_telegram_url
         ),
     )
 
@@ -205,7 +205,7 @@ async def back_to_year(callback: CallbackQuery, state: FSMContext):
     await state.set_state(CalcStates.choosing_year)
     await callback.message.edit_text(
         'Выберите год:',
-        reply_markup=options_keyboard(router.catalog.years(data['brand'], data['model']), 'year', with_back=True, back_callback='nav|to_model'),
+        reply_markup=options_keyboard(router.catalog.years(data['brand'], data['model']), 'year', with_back=True, back_callback='nav|to_model', manager_url=settings.manager_telegram_url),
     )
 
 
@@ -238,7 +238,7 @@ async def back_to_engine(callback: CallbackQuery, state: FSMContext):
     await state.set_state(CalcStates.choosing_engine)
     await callback.message.edit_text(
         'Выберите объем двигателя:',
-        reply_markup=options_keyboard(router.catalog.engines(data['brand'], data['model'], data['year']), 'engine', with_back=True, back_callback='nav|to_year'),
+        reply_markup=options_keyboard(router.catalog.engines(data['brand'], data['model'], data['year']), 'engine', with_back=True, back_callback='nav|to_year', manager_url=settings.manager_telegram_url),
     )
 
 
@@ -310,7 +310,7 @@ async def final_recalculate(callback: CallbackQuery, state: FSMContext):
     await callback.answer()
     await state.clear()
     await state.set_state(CalcStates.choosing_brand)
-    await callback.message.answer('Выберите марку:', reply_markup=options_keyboard(router.catalog.brands(), 'brand'))
+    await callback.message.answer('Выберите марку:', reply_markup=options_keyboard(router.catalog.brands(), 'brand', manager_url=settings.manager_telegram_url))
 
 # other handlers unchanged...
 @router.message(CalcStates.manual_name)
