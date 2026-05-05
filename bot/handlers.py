@@ -13,6 +13,21 @@ from bot.states import CalcStates
 router = Router()
 
 
+def digits_only(value: str) -> str:
+    return ''.join(ch for ch in (value or '') if ch.isdigit())
+
+
+def find_value(snapshot: list[list[str]], *keywords: str) -> str:
+    lowered = [k.casefold() for k in keywords]
+    for row in snapshot:
+        if not row:
+            continue
+        label = (row[0] if len(row) > 0 else '').strip().casefold()
+        if any(k in label for k in lowered):
+            return (row[1] if len(row) > 1 else '').strip() or '—'
+    return '—'
+
+
 def register_dependencies(catalog, calculator, history, bot):
     router.catalog = catalog
     router.calculator = calculator
@@ -79,14 +94,69 @@ async def choose_engine(callback: CallbackQuery, state: FSMContext):
         await callback.message.answer('По выбранному автомобилю нет данных для автоматического расчета.\nОставьте заявку, и менеджер сделает расчет вручную.\n\nВведите ваше имя:', reply_markup=kb)
         return
 
-    snapshot = router.calculator.calculate(data['brand'], data['model'], data['year'], engine, rec.price_usd)
+    await state.update_data(engine=engine, invoice_usd=rec.price_usd)
+    await state.set_state(CalcStates.entering_real_price)
+    await callback.message.answer('Введите стоимость автомобиля в Корее в вонах, например: 485500000')
+
+
+@router.message(CalcStates.entering_real_price)
+async def enter_real_price(message: Message, state: FSMContext):
+    real_price_krw = digits_only(message.text or '')
+    if not real_price_krw:
+        await message.answer('Не удалось распознать сумму. Введите стоимость в KRW, например: 485500000')
+        return
+
+    data = await state.get_data()
+    snapshot = router.calculator.calculate(
+        data['brand'],
+        data['model'],
+        data['year'],
+        data['engine'],
+        data['invoice_usd'],
+        real_price_krw,
+    )
     total_line = next((row for row in snapshot if row and 'итог' in row[0].strip().lower()), None)
     total = total_line[1] if total_line and len(total_line) > 1 else '—'
     currency = total_line[2] if total_line and len(total_line) > 2 else '₸/$'
 
-    router.history.save_success(callback.from_user.id, callback.from_user.username or '', data['brand'], data['model'], data['year'], engine, rec.price_usd, total, currency)
-    await callback.message.answer(
-        f'🚗 Расчет авто до Алматы\n\nМарка: {data["brand"]}\nМодель: {data["model"]}\nГод выпуска: {data["year"]}\nОбъем двигателя: {engine}\n\nОценочная стоимость / инвойс: {rec.price_usd} $\n\nИтоговая стоимость авто в Алматы с таможней:\n{total} {currency}'
+    car_to_almaty_krw = find_value(snapshot, 'стоимость автомобиля до алматы', 'авто до алматы')
+    car_to_almaty_usd = find_value(snapshot, 'стоимость автомобиля до алматы usd', 'авто до алматы usd')
+    fees = find_value(snapshot, 'сборы')
+    duty = find_value(snapshot, 'пошлина')
+    vat = find_value(snapshot, 'ндс')
+    recycle = find_value(snapshot, 'утильсбор')
+    reg = find_value(snapshot, 'первичная регистрация')
+    sbkts = find_value(snapshot, 'сбктс', 'эптс', 'кнопка')
+
+    router.history.save_success(
+        message.from_user.id,
+        message.from_user.username or '',
+        data['brand'],
+        data['model'],
+        data['year'],
+        data['engine'],
+        data['invoice_usd'],
+        total,
+        currency,
+    )
+    await message.answer(
+        f'🚗 Расчет авто до Алматы\n\n'
+        f'Марка: {data["brand"]}\n'
+        f'Модель: {data["model"]}\n'
+        f'Год выпуска: {data["year"]}\n'
+        f'Объем двигателя: {data["engine"]}\n\n'
+        f'Реальная стоимость авто в Корее: {real_price_krw} ₩\n'
+        f'Комиссия дилера: 440 000 ₩\n'
+        f'Логистика Инчон — Алматы: 1 750 $\n'
+        f'Стоимость автомобиля до Алматы: {car_to_almaty_krw} ₩ / {car_to_almaty_usd} $\n'
+        f'Оценочная стоимость / инвойс для таможни: {data["invoice_usd"]} $\n\n'
+        f'Сборы: {fees}\n'
+        f'Пошлина: {duty}\n'
+        f'НДС: {vat}\n'
+        f'Утильсбор: {recycle}\n'
+        f'Первичная регистрация: {reg}\n'
+        f'СБКТС/ЭПТС/Кнопка: {sbkts}\n\n'
+        f'Итоговая стоимость авто в Алматы с таможней:\n{total} {currency}'
     )
     await state.clear()
 
