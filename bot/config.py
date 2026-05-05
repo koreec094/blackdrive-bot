@@ -12,6 +12,11 @@ class Settings(BaseSettings):
     google_service_account_json: str = Field(alias='GOOGLE_SERVICE_ACCOUNT_JSON')
     admin_ids_raw: str = Field(default='', alias='ADMIN_IDS')
 
+    main_channel_id: str = Field(default='', alias='MAIN_CHANNEL_ID')
+    main_channel_url: str = Field(default='https://t.me/blackdriveauto', alias='MAIN_CHANNEL_URL')
+    manager_telegram: str = Field(default='@blackdriveauto1', alias='MANAGER_TELEGRAM')
+    manager_whatsapp: str = Field(default='wa.me/77085217861', alias='MANAGER_WHATSAPP')
+
     calc_sheet_name: str = Field(default='Казахстан/Алматы', alias='CALC_SHEET_NAME')
     car_db_sheet_name: str = Field(default='База авто', alias='CAR_DB_SHEET_NAME')
     requests_sheet_name: str = Field(default='Заявки', alias='REQUESTS_SHEET_NAME')
@@ -23,6 +28,11 @@ class Settings(BaseSettings):
     calc_input_engine_cell: str = Field(default='B6', alias='CALC_INPUT_ENGINE_CELL')
     calc_input_invoice_cell: str = Field(default='B8', alias='CALC_INPUT_INVOICE_CELL')
     calc_input_real_price_cell: str = Field(default='B11', alias='CALC_INPUT_REAL_PRICE_CELL')
+
+    car_to_almaty_total_cell: str = Field(default='', alias='CAR_TO_ALMATY_TOTAL_CELL')
+    customs_total_cell: str = Field(default='', alias='CUSTOMS_TOTAL_CELL')
+    final_total_cell: str = Field(default='', alias='FINAL_TOTAL_CELL')
+
     calc_output_range: str = Field(default='A1:Z60', alias='CALC_OUTPUT_RANGE')
     cache_ttl_minutes: int = Field(default=20, alias='CACHE_TTL_MINUTES')
 
