@@ -31,6 +31,9 @@ class Settings(BaseSettings):
 
     car_to_almaty_krw_cell: str = Field(default='B11', alias='CAR_TO_ALMATY_KRW_CELL')
     car_to_almaty_usd_cell: str = Field(default='D11', alias='CAR_TO_ALMATY_USD_CELL')
+    krw_usd_rate_cell: str = Field(default='F3', alias='KRW_USD_RATE_CELL')
+    dealer_fee_krw: int = Field(default=440000, alias='DEALER_FEE_KRW')
+    logistics_usd: int = Field(default=1750, alias='LOGISTICS_USD')
     customs_total_cell: str = Field(default='B18', alias='CUSTOMS_TOTAL_CELL')
     utilization_fee_cell: str = Field(default='B19', alias='UTILIZATION_FEE_CELL')
     primary_registration_cell: str = Field(default='B20', alias='PRIMARY_REGISTRATION_CELL')

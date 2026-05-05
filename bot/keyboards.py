@@ -28,3 +28,12 @@ def subscribe_keyboard(channel_url: str) -> InlineKeyboardMarkup:
             [InlineKeyboardButton(text='⬅️ Назад', callback_data='menu|back_to_start')],
         ]
     )
+
+
+def final_result_keyboard() -> InlineKeyboardMarkup:
+    return InlineKeyboardMarkup(
+        inline_keyboard=[
+            [InlineKeyboardButton(text='👨‍💼 Связаться с менеджером', callback_data='final|manager')],
+            [InlineKeyboardButton(text='🔄 Рассчитать еще один автомобиль', callback_data='final|recalculate')],
+        ]
+    )
