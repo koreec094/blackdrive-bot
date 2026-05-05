@@ -254,10 +254,9 @@ async def enter_real_price(message: Message, state: FSMContext):
     real_price_value = int(real_price_krw)
     krw_usd_rate = parse_int(read_cell_or_warn('krw_usd_rate', settings.krw_usd_rate_cell))
 
-    car_to_almaty_krw = parse_int(read_cell_or_warn('car_to_almaty_krw', settings.car_to_almaty_krw_cell))
-    car_to_almaty_usd = parse_int(read_cell_or_warn('car_to_almaty_usd', settings.car_to_almaty_usd_cell))
-
-    if krw_usd_rate and (car_to_almaty_krw is None or car_to_almaty_usd is None):
+    car_to_almaty_krw = None
+    car_to_almaty_usd = None
+    if krw_usd_rate:
         car_to_almaty_krw = real_price_value + settings.dealer_fee_krw + settings.logistics_usd * krw_usd_rate
         car_to_almaty_usd = round(car_to_almaty_krw / krw_usd_rate)
 
