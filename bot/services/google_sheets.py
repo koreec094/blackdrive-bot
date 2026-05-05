@@ -40,6 +40,9 @@ class GoogleSheetsClient:
     def read_calc_snapshot(self) -> list[list[str]]:
         return self.ws(settings.calc_sheet_name).get(settings.calc_output_range)
 
+    def read_calc_cell(self, cell: str) -> str:
+        return self.ws(settings.calc_sheet_name).acell(cell).value or ''
+
     @staticmethod
     def now_str() -> str:
         return datetime.utcnow().isoformat(timespec='seconds')
