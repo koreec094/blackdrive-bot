@@ -7,6 +7,7 @@ class CalcStates(StatesGroup):
     choosing_model = State()
     choosing_year = State()
     choosing_engine = State()
+    entering_real_price = State()
     manual_name = State()
     manual_phone = State()
     manual_comment = State()

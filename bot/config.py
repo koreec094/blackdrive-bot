@@ -22,6 +22,7 @@ class Settings(BaseSettings):
     calc_input_year_cell: str = Field(default='B5', alias='CALC_INPUT_YEAR_CELL')
     calc_input_engine_cell: str = Field(default='B6', alias='CALC_INPUT_ENGINE_CELL')
     calc_input_invoice_cell: str = Field(default='B8', alias='CALC_INPUT_INVOICE_CELL')
+    calc_input_real_price_cell: str = Field(default='B11', alias='CALC_INPUT_REAL_PRICE_CELL')
     calc_output_range: str = Field(default='A1:Z60', alias='CALC_OUTPUT_RANGE')
     cache_ttl_minutes: int = Field(default=20, alias='CACHE_TTL_MINUTES')
 
